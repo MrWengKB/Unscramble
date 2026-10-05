@@ -258,3 +258,11 @@ main {
   display: none;
   z-index: 1000;
 }
+
+/* 句中标点方块样式 */
+.word-chip.punct-chip {
+  padding: 8px 12px;
+  background-color: #f1f5f9;
+  color: #334155;
+  font-weight: 700;
+}
