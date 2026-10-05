@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>教师端 - 连词成句题库与专属链接生成器</title>
+  <!-- 引入纯前端高效无损压缩库与二维码库 -->
+  <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 30px 16px 60px;
+    }
+    .container {
+      max-width: 840px;
+      margin: 0 auto;
+    }
+    .header {
+      margin-bottom: 24px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 16px;
+    }
+    .header h1 { font-size: 1.6rem; color: #1e293b; margin-bottom: 6px; }
+    .header p { color: var(--muted); font-size: 0.95rem; }
+
+    .form-group {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .form-group label {
+      display: block;
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 6px;
+      color: #334155;
+    }
+    .hint {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    textarea, input[type="text"] {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    textarea:focus, input[type="text"]:focus {
+      border-color: var(--primary);
+    }
+    textarea {
+      resize: vertical;
+      min-height: 140px;
+      line-height: 1.6;
+    }
+
+    .btn-create {
+      display: block;
+      width: 100%;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 14px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+    }
+    .btn-create:hover { background: var(--primary-hover); }
+    .btn-create:active { transform: scale(0.99); }
+
+    .result-section {
+      display: none;
+      margin-top: 24px;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .result-section h2 {
+      font-size: 1.25rem;
+      color: #065f46;
+      margin-bottom: 12px;
+    }
+    .link-box {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .btn-copy {
+      background: #059669;
+      color: #fff;
+      border: none;
+      padding: 0 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-copy:hover { background: #047857; }
+    .qr-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #fff;
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid #d1fae5;
+      width: fit-content;
+      margin: 0 auto;
+    }
+    .qr-container p {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <h1>连词成句 - 教师专属练习生成器</h1>
+      <p>为你的班级定制题目与学生名单，一键生成专属学生链接，成绩直存你的 Google Sheet。</p>
+    </div>
+
+    <!-- 1. 学生名单 -->
+    <div class="form-group">
+      <label>1. 学生名单（每行一个姓名）</label>
+      <div class="hint">直接从你的班级名单 Excel 表中复制姓名列粘贴到此处。</div>
+      <textarea id="input-namelist" placeholder="张小明&#10;李晓华&#10;王芳&#10;陈伟"></textarea>
+    </div>
+
+    <!-- 2. 练习题目 -->
+    <div class="form-group">
+      <label>2. 句子题目（每行一题，空格分开词语，标点放在句末）</label>
+      <div class="hint">
+        格式示例：<br>
+        <code>1. 我们 今天 在 公园里 散步 。</code><br>
+        <code>2. 天上 飘着 许多 白云 。</code>
+      </div>
+      <textarea id="input-sentences" placeholder="1. 我们 今天 在 公园里 散步 。&#10;2. 小鸟 在 枝头 快乐地 唱歌 。"></textarea>
+    </div>
+
+    <!-- 3. 教师专属 Google Sheet 链接 -->
+    <div class="form-group">
+      <label>3. 你的 Google Sheets 成绩接收链接（可选）</label>
+      <div class="hint">
+        粘贴你的 Apps Script Web App 链接（以 <code>/exec</code> 结尾）。留空则仅供学生练习，不云端留存成绩。
+      </div>
+      <input type="text" id="input-webhook" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
+    </div>
+
+    <button class="btn-create" onclick="generateLink()">生成学生专属练习链接与二维码</button>
+
+    <!-- 结果区域 -->
+    <div class="result-section" id="result-box">
+      <h2>🎉 生成成功！请将此链接或二维码发给学生：</h2>
+      <div class="link-box">
+        <input type="text" id="output-url" readonly>
+        <button class="btn-copy" onclick="copyUrl()">复制链接</button>
+      </div>
+
+      <div class="qr-container">
+        <div id="qrcode"></div>
+        <p>支持学生使用手机或平板扫码直达练习</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function generateLink() {
+      const namelist = document.getElementById('input-namelist').value.trim();
+      const sentences = document.getElementById('input-sentences').value.trim();
+      const webhook = document.getElementById('input-webhook').value.trim();
+
+      if (!sentences) {
+        alert("请至少输入一道句子题目！");
+        return;
+      }
+
+      // 将老师的数据打包成一个对象
+      const payload = {
+        n: namelist,   // namelist
+        s: sentences,  // sentences
+        w: webhook     // webhook
+      };
+
+      // 使用 LZString 进行高效无损压缩，并转为安全 URL 格式
+      const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(payload));
+      
+      // 构造学生端链接（指向同目录的 index.html）
+      const currentUrl = window.location.href;
+      const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/') + 1) + 'index.html';
+      const studentUrl = `${baseUrl}#data=${compressed}`;
+
+      // 展示结果
+      document.getElementById('output-url').value = studentUrl;
+      document.getElementById('result-box').style.display = 'block';
+
+      // 生成二维码
+      const qrEl = document.getElementById('qrcode');
+      qrEl.innerHTML = '';
+      new QRCode(qrEl, {
+        text: studentUrl,
+        width: 180,
+        height: 180,
+        colorDark : "#0f172a",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.M
+      });
+
+      // 滚动到底部
+      document.getElementById('result-box').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function copyUrl() {
+      const urlInput = document.getElementById('output-url');
+      urlInput.select();
+      document.execCommand('copy');
+      alert("专属练习链接已成功复制到剪贴板！");
+    }
+  </script>
+</body>
+</html>
