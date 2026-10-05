@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>连词成句 - 制作练习</title>
-  <!-- 引入轻量级二维码生成库 -->
+  <title>连词成句 - 制作练习与班级配置</title>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <style>
     :root {
@@ -29,7 +28,7 @@
     }
 
     .container {
-      max-width: 820px;
+      max-width: 860px;
       margin: 0 auto;
     }
 
@@ -55,22 +54,23 @@
       background: var(--card-bg);
       border-radius: 12px;
       border: 1px solid var(--border);
-      padding: 24px;
-      margin-bottom: 24px;
+      padding: 22px;
+      margin-bottom: 20px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
 
     .card-title {
-      font-size: 1.15rem;
+      font-size: 1.1rem;
       font-weight: 700;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
+      color: #0f172a;
     }
 
     .card-desc {
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       color: var(--text-muted);
-      margin-bottom: 16px;
-      line-height: 1.6;
+      margin-bottom: 12px;
+      line-height: 1.5;
     }
 
     .card-desc code {
@@ -81,7 +81,7 @@
       font-weight: 600;
     }
 
-    textarea {
+    textarea, input[type="text"] {
       width: 100%;
       padding: 12px 14px;
       border: 1px solid var(--border);
@@ -89,21 +89,23 @@
       font-size: 0.95rem;
       font-family: inherit;
       outline: none;
-      resize: vertical;
-      min-height: 160px;
-      line-height: 1.6;
       transition: all 0.2s;
     }
 
-    textarea:focus {
+    textarea:focus, input[type="text"]:focus {
       border-color: var(--primary);
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    textarea {
+      resize: vertical;
+      line-height: 1.6;
     }
 
     .btn-toolbar {
       display: flex;
       gap: 12px;
-      margin-top: 16px;
+      margin-top: 14px;
       flex-wrap: wrap;
     }
 
@@ -125,85 +127,33 @@
     .btn-primary:hover { background: var(--primary-hover); }
     .btn-success { background: var(--success); color: white; }
     .btn-success:hover { background: var(--success-hover); }
+    .btn-large {
+      padding: 14px 36px;
+      font-size: 1.15rem;
+      box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.3);
+    }
 
-    /* 生成结果展示区 */
+    .global-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin-top: 28px;
+      padding: 24px;
+      background: white;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
     #result-panel {
       display: none;
       margin-top: 24px;
       background: #f0fdf4;
-      border: 1px solid #bbf7d0;
+      border: 1px solid #86efac;
       border-radius: 12px;
       padding: 20px;
     }
 
     .result-title {
       font-weight: 700;
-      color: #166534;
-      font-size: 1.05rem;
-      margin-bottom: 12px;
-    }
-
-    .url-display-group {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    .url-input {
-      flex: 1;
-      padding: 10px 12px;
-      border: 1px solid #86efac;
-      border-radius: 8px;
-      background: white;
-      font-size: 0.9rem;
-      outline: none;
-      color: #166534;
-    }
-
-    .qr-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 16px;
-      background: white;
-      border-radius: 8px;
-      border: 1px solid #dcfce7;
-      width: fit-content;
-      margin: 0 auto;
-    }
-
-    #qrcode {
-      margin-bottom: 8px;
-    }
-  </style>
-</head>
-<body>
-
-<div class="container">
-  <header>
-    <div>
-      <h1>制作自己的练习</h1>
-    </div>
-    <a href="index.html" class="back-link">← 返回练习页面</a>
-  </header>
-
-  <div class="card">
-    <div class="card-title">输入或粘贴练习句子</div>
-    <div class="card-desc">
-      • 词语之间用 <strong>空格</strong> 分开，每行一题。<br>
-      • 句中标点（如 <code>，</code>、<code>、</code>）也会变成移动方块，句尾标点（如 <code>。</code>、<code>？</code>、<code>！</code>）自动固定在右侧。<br>
-      • 如果同一题有<strong>多种可能答案</strong>，用 <strong><code>|</code></strong> 隔开。
-    </div>
-
-    <textarea id="sentences-input" placeholder="例如：
-1. 我们 今天 在 公园里 散步 。
-2. 我 会 扫地 ， 也 会 抹 桌子 。 | 我 会 抹 桌子 ， 也 会 扫地 。"></textarea>
-
-    <div class="btn-toolbar">
-      <button class="btn-success" onclick="generateExerciseLink()">
-        🚀 生成练习链接并出题
-      </button>
-      <button class="btn-primary" onclick="autoFormatSpacing()">
-        ⚡ 智能补齐标点空格
-      </button>
-    </div>
+      color: #166534
