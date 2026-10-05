@@ -3,7 +3,7 @@ let googleSheetWebhookUrl = "";
 let selectedChipForSwap = null;
 let startTime = Date.now();
 
-// 气泡提示辅助函数
+// 浮层提示信息
 function showToast(msg, duration = 3000) {
   const toast = document.getElementById('status-toast');
   toast.textContent = msg;
@@ -13,15 +13,52 @@ function showToast(msg, duration = 3000) {
   }, duration);
 }
 
-// 页面加载入口
+// 页面初始化入口：智能判断是否带有教师专属链接
 async function init() {
   startTime = Date.now();
-  await loadWebhookUrl();
-  await loadStudentNames();
-  await loadSentences();
+
+  // 1. 检查网址 Hash 是否含有教师生成的 #data= 压缩参数
+  const hash = window.location.hash;
+  let customData = null;
+
+  if (hash && hash.includes('data=')) {
+    try {
+      const encoded = hash.split('data=')[1];
+      const decompressed = LZString.decompressFromEncodedURIComponent(encoded);
+      if (decompressed) {
+        customData = JSON.parse(decompressed);
+      }
+    } catch (e) {
+      console.warn("解析自定义数据失败，降级回退到默认 txt 文件:", e);
+    }
+  }
+
+  // 2. 如果是专属链接，使用同事自定义的数据；否则读取根目录的默认 txt
+  if (customData) {
+    googleSheetWebhookUrl = customData.w || "";
+    renderStudentNames(customData.n || "");
+    parseAndRenderSentences(customData.s || "");
+  } else {
+    await loadWebhookUrl();
+    await loadStudentNames();
+    await loadSentences();
+  }
 }
 
-// 1. 读取 score.txt 中的 Webhook URL
+// 辅助函数：根据换行文本渲染姓名下拉菜单
+function renderStudentNames(rawText) {
+  const select = document.getElementById('student-select');
+  select.innerHTML = '<option value="">-- 请选择姓名 --</option>';
+  const names = rawText.split('\n').map(n => n.trim()).filter(Boolean);
+  names.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    select.appendChild(opt);
+  });
+}
+
+// 1. 读取 score.txt 获取 Google Sheet Webhook 链接 (默认模式)
 async function loadWebhookUrl() {
   try {
     const res = await fetch(`./score.txt?t=${Date.now()}`);
@@ -34,27 +71,20 @@ async function loadWebhookUrl() {
   }
 }
 
-// 2. 读取 namelist.txt 并生成下拉菜单
+// 2. 读取 namelist.txt 获取学生名单 (默认模式)
 async function loadStudentNames() {
-  const select = document.getElementById('student-select');
   try {
     const res = await fetch(`./namelist.txt?t=${Date.now()}`);
     if (res.ok) {
       const text = await res.text();
-      const names = text.split('\n').map(n => n.trim()).filter(Boolean);
-      names.forEach(name => {
-        const opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
-        select.appendChild(opt);
-      });
+      renderStudentNames(text);
     }
   } catch (e) {
     console.error("加载名单失败:", e);
   }
 }
 
-// 3. 读取 sentences.txt 并解析渲染
+// 3. 读取 sentences.txt 并解析渲染题目 (默认模式)
 async function loadSentences() {
   try {
     const res = await fetch(`./sentences.txt?t=${Date.now()}`);
@@ -69,7 +99,7 @@ async function loadSentences() {
   }
 }
 
-// 解析文本格式并渲染 UI
+// 解析句子格式并渲染卡片
 function parseAndRenderSentences(rawText) {
   const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
   questionsData = [];
@@ -77,7 +107,7 @@ function parseAndRenderSentences(rawText) {
   listContainer.innerHTML = '';
 
   lines.forEach((line, idx) => {
-    // 匹配行首题号
+    // 匹配行首题号（如 "1. " 或 "1、"）
     let numStr = (idx + 1) + ".";
     let rest = line;
     const numMatch = line.match(/^(\d+[\.、\s])\s*/);
@@ -86,7 +116,7 @@ function parseAndRenderSentences(rawText) {
       rest = line.substring(numMatch[0].length).trim();
     }
 
-    // 分离词语与标点符号
+    // 分割词语与标点符号
     const tokens = rest.split(/\s+/).filter(Boolean);
     if (tokens.length === 0) return;
 
@@ -106,7 +136,7 @@ function parseAndRenderSentences(rawText) {
       punctuation: punct
     });
 
-    // 创建单题卡片
+    // 渲染题目结构
     const card = document.createElement('div');
     card.className = 'question-card';
     card.id = `q-card-${idx}`;
@@ -124,7 +154,7 @@ function parseAndRenderSentences(rawText) {
     `;
     listContainer.appendChild(card);
 
-    // 启用 SortableJS 拖拽
+    // 启用 SortableJS 拖动排序
     const wordsEl = card.querySelector(`#words-container-${idx}`);
     new Sortable(wordsEl, {
       animation: 150,
@@ -132,7 +162,7 @@ function parseAndRenderSentences(rawText) {
       chosenClass: 'sortable-chosen'
     });
 
-    // 触屏/点击互换事件
+    // 点击互换监听（方便触屏/平板操作）
     wordsEl.addEventListener('click', (e) => {
       const chip = e.target.closest('.word-chip');
       if (!chip) return;
@@ -141,7 +171,7 @@ function parseAndRenderSentences(rawText) {
   });
 }
 
-// Fisher-Yates 随机打乱
+// Fisher-Yates 随机打乱算法
 function shuffleArray(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -150,7 +180,7 @@ function shuffleArray(arr) {
   return arr;
 }
 
-// 点击两个词互换位置
+// 点击两个词块进行对调
 function handleChipTap(chip, container) {
   if (!selectedChipForSwap) {
     selectedChipForSwap = chip;
@@ -170,7 +200,7 @@ function handleChipTap(chip, container) {
   }
 }
 
-// 检查答案并提交
+// 检查答案并提交成绩到 Google Sheet
 async function submitExam() {
   const studentName = document.getElementById('student-select').value;
   if (!studentName) {
@@ -201,18 +231,18 @@ async function submitExam() {
   const accuracy = total > 0 ? `${Math.round((correctCount / total) * 100)}%` : '0%';
   const durationSec = Math.round((Date.now() - startTime) / 1000);
 
+  // 全对时触发烟花庆祝
   if (correctCount === total && total > 0) {
     confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
   }
 
-  // 发送数据到 Google Sheet Webhook
- // 发送数据到 Google Sheet Webhook
+  // 发送数据到对应的 Google Sheet Webhook
   if (googleSheetWebhookUrl) {
     const btn = document.getElementById('submit-btn');
     btn.disabled = true;
     btn.textContent = "正在提交成绩到教师表格...";
 
-    // 组装表单键值对（穿透性最强、最稳定）
+    // 使用已验证稳定的 URL 编码表单参数
     const formData = new URLSearchParams();
     formData.append('time', new Date().toLocaleString());
     formData.append('student', studentName);
@@ -241,7 +271,8 @@ async function submitExam() {
     }
   } else {
     showToast(`练习完成！答对：${correctCount}/${total}`, 4000);
-  }}
+  }
+}
 
-// 绑定初始化事件
+// 页面加载触发
 window.addEventListener('DOMContentLoaded', init);
