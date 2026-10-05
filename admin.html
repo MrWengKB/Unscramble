@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>连词成句 - 练习生成后台</title>
+  <title>连词成句 - 制作练习</title>
+  <!-- 引入轻量级二维码生成库 -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <style>
     :root {
       --primary: #2563eb;
@@ -15,7 +17,6 @@
       --border: #cbd5e1;
       --success: #16a34a;
       --success-hover: #15803d;
-      --warning: #d97706;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -28,7 +29,7 @@
     }
 
     .container {
-      max-width: 920px;
+      max-width: 820px;
       margin: 0 auto;
     }
 
@@ -41,11 +42,8 @@
       border-bottom: 2px solid var(--border);
     }
 
-    header h1 { font-size: 1.4rem; font-weight: 700; color: #0f172a; }
+    header h1 { font-size: 1.35rem; font-weight: 700; }
     .back-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
       color: var(--primary);
       text-decoration: none;
       font-size: 0.95rem;
@@ -58,24 +56,21 @@
       border-radius: 12px;
       border: 1px solid var(--border);
       padding: 24px;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
 
     .card-title {
       font-size: 1.15rem;
       font-weight: 700;
-      margin-bottom: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      margin-bottom: 8px;
     }
 
     .card-desc {
       font-size: 0.88rem;
       color: var(--text-muted);
-      margin-bottom: 14px;
-      line-height: 1.5;
+      margin-bottom: 16px;
+      line-height: 1.6;
     }
 
     .card-desc code {
@@ -86,7 +81,7 @@
       font-weight: 600;
     }
 
-    textarea, input[type="text"] {
+    textarea {
       width: 100%;
       padding: 12px 14px;
       border: 1px solid var(--border);
@@ -94,30 +89,27 @@
       font-size: 0.95rem;
       font-family: inherit;
       outline: none;
+      resize: vertical;
+      min-height: 160px;
+      line-height: 1.6;
       transition: all 0.2s;
     }
 
-    textarea:focus, input[type="text"]:focus {
+    textarea:focus {
       border-color: var(--primary);
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
 
-    textarea {
-      resize: vertical;
-      min-height: 150px;
-      line-height: 1.6;
-    }
-
     .btn-toolbar {
       display: flex;
-      gap: 10px;
-      margin-top: 14px;
+      gap: 12px;
+      margin-top: 16px;
       flex-wrap: wrap;
     }
 
     button {
-      padding: 9px 18px;
-      font-size: 0.92rem;
+      padding: 10px 20px;
+      font-size: 0.95rem;
       font-weight: 600;
       border-radius: 8px;
       cursor: pointer;
@@ -129,64 +121,59 @@
     }
 
     button:active { transform: scale(0.98); }
-
     .btn-primary { background: var(--primary); color: white; }
     .btn-primary:hover { background: var(--primary-hover); }
-
-    .btn-secondary { background: #e2e8f0; color: #334155; }
-    .btn-secondary:hover { background: #cbd5e1; }
-
     .btn-success { background: var(--success); color: white; }
     .btn-success:hover { background: var(--success-hover); }
 
-    .preview-box {
-      margin-top: 16px;
-      background: #f8fafc;
-      border: 2px dashed #cbd5e1;
-      border-radius: 10px;
-      padding: 16px;
-      font-size: 0.95rem;
+    /* 生成结果展示区 */
+    #result-panel {
+      display: none;
+      margin-top: 24px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 12px;
+      padding: 20px;
     }
 
-    .preview-item {
+    .result-title {
+      font-weight: 700;
+      color: #166534;
+      font-size: 1.05rem;
       margin-bottom: 12px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid #e2e8f0;
     }
-    .preview-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
 
-    .chip-preview {
-      display: inline-block;
+    .url-display-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .url-input {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid #86efac;
+      border-radius: 8px;
       background: white;
-      border: 1px solid #94a3b8;
-      padding: 4px 10px;
-      border-radius: 6px;
-      margin: 3px 4px 3px 0;
       font-size: 0.9rem;
-      font-weight: 500;
+      outline: none;
+      color: #166534;
     }
 
-    .chip-punct { background: #e0f2fe; border-color: #7dd3fc; color: #0369a1; font-weight: 700; }
-    .chip-end-punct { background: #e2e8f0; font-weight: 700; color: #475569; }
-
-    .global-actions {
+    .qr-container {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
-      margin-top: 36px;
-      padding: 24px;
+      padding: 16px;
       background: white;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      text-align: center;
+      border-radius: 8px;
+      border: 1px solid #dcfce7;
+      width: fit-content;
+      margin: 0 auto;
     }
 
-    .btn-large {
-      padding: 14px 36px;
-      font-size: 1.1rem;
-      border-radius: 10px;
-      box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.3);
+    #qrcode {
+      margin-bottom: 8px;
     }
   </style>
 </head>
@@ -195,199 +182,28 @@
 <div class="container">
   <header>
     <div>
-      <h1>连词成句 - 练习生成管理后台</h1>
-      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">制作、转换题目并生成配套配置文件</p>
+      <h1>制作自己的练习</h1>
     </div>
-    <a href="index.html" class="back-link">
-      ← 返回练习页面
-    </a>
+    <a href="index.html" class="back-link">← 返回练习页面</a>
   </header>
 
-  <!-- 1. 题目生成与编辑 -->
   <div class="card">
-    <div class="card-title">
-      <span>1. 题目设置 (sentences.txt)</span>
-    </div>
+    <div class="card-title">输入或粘贴练习句子</div>
     <div class="card-desc">
-      • 支持常规用空格分词的格式，如：<code>1. 我 会 扫地 ， 也 会 抹 桌子 。 | 我 会 抹 桌子 ， 也 会 扫地 。</code><br>
-      • 如果直接粘贴了未空格的句子，可点击下方 <strong>“⚡ 智能分词与生成格式”</strong> 快速拆开字词。
+      • 词语之间用 <strong>空格</strong> 分开，每行一题。<br>
+      • 句中标点（如 <code>，</code>、<code>、</code>）也会变成移动方块，句尾标点（如 <code>。</code>、<code>？</code>、<code>！</code>）自动固定在右侧。<br>
+      • 如果同一题有<strong>多种可能答案</strong>，用 <strong><code>|</code></strong> 隔开。
     </div>
-    
-    <textarea id="sentences-input" placeholder="可直接在此粘贴题目，每行一题。例如：
+
+    <textarea id="sentences-input" placeholder="例如：
 1. 我们 今天 在 公园里 散步 。
 2. 我 会 扫地 ， 也 会 抹 桌子 。 | 我 会 抹 桌子 ， 也 会 扫地 。"></textarea>
 
     <div class="btn-toolbar">
-      <button class="btn-primary" onclick="autoFormatSentences()">⚡ 智能拆词 / 格式化</button>
-      <button class="btn-secondary" onclick="previewSentences()">👁 预览排版效果</button>
-      <button class="btn-success" onclick="downloadFile('sentences.txt', document.getElementById('sentences-input').value)">⬇ 生成并下载 sentences.txt</button>
+      <button class="btn-success" onclick="generateExerciseLink()">
+        🚀 生成练习链接并出题
+      </button>
+      <button class="btn-primary" onclick="autoFormatSpacing()">
+        ⚡ 智能补齐标点空格
+      </button>
     </div>
-
-    <!-- 预览呈现区 -->
-    <div class="preview-box" id="preview-area" style="display:none;"></div>
-  </div>
-
-  <!-- 2. 学生名单配置 -->
-  <div class="card">
-    <div class="card-title">2. 学生名单设置 (namelist.txt)</div>
-    <div class="card-desc">每行一个学生姓名，用于首页下拉列表选取：</div>
-    <textarea id="namelist-input" style="min-height: 100px;" placeholder="小明&#10;小红&#10;小华"></textarea>
-    <div class="btn-toolbar">
-      <button class="btn-success" onclick="downloadFile('namelist.txt', document.getElementById('namelist-input').value)">⬇ 生成并下载 namelist.txt</button>
-    </div>
-  </div>
-
-  <!-- 3. Google Sheet 接口配置 -->
-  <div class="card">
-    <div class="card-title">3. 教师成绩回传接口 (score.txt)</div>
-    <div class="card-desc">
-      填入你在 Google Sheets 中部署 Apps Script 获得的 Web App 链接（以 <code>https://script.google.com/macros/s/.../exec</code> 开头）：
-    </div>
-    <input type="text" id="score-url-input" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
-    <div class="btn-toolbar">
-      <button class="btn-success" onclick="downloadFile('score.txt', document.getElementById('score-url-input').value.trim())">⬇ 生成并下载 score.txt</button>
-    </div>
-  </div>
-
-  <!-- 4. 全局一键生成与打包 -->
-  <div class="global-actions">
-    <button class="btn-success btn-large" onclick="generateAndDownloadAll()">
-      🚀 一键生成并下载全部文件
-    </button>
-    <span style="font-size: 0.85rem; color: var(--text-muted);">
-      点击后将依次下载生成的 <strong>sentences.txt</strong>、<strong>namelist.txt</strong> 和 <strong>score.txt</strong>，放入 GitHub 仓库根目录即可。
-    </span>
-  </div>
-</div>
-
-<script>
-  // 智能拆词辅助函数：自动为未空格的标点、词语加入空格
-  function autoFormatSentences() {
-    const el = document.getElementById('sentences-input');
-    const lines = el.value.split('\n');
-    const formatted = [];
-
-    lines.forEach((line, idx) => {
-      let trimmed = line.trim();
-      if (!trimmed) return;
-
-      // 提取行首已有序号（如 1. ），若没有则自动加上
-      let num = `${idx + 1}. `;
-      const match = trimmed.match(/^(\d+[\.、\s])\s*/);
-      if (match) {
-        num = match[1].includes('.') ? match[1].trim() + ' ' : match[1].replace('、', '.').trim() + ' ';
-        trimmed = trimmed.substring(match[0].length).trim();
-      }
-
-      // 按多解竖线分割
-      const answers = trimmed.split('|').map(s => s.trim()).filter(Boolean);
-      const cleanAnswers = answers.map(ans => {
-        // 在常见标点前加入空格分离
-        let s = ans.replace(/([，、；;。？！?!])/g, ' $1 ');
-        // 压缩多余空格
-        s = s.replace(/\s+/g, ' ').trim();
-        return s;
-      });
-
-      formatted.push(num + cleanAnswers.join(' | '));
-    });
-
-    if (formatted.length > 0) {
-      el.value = formatted.join('\n');
-      previewSentences();
-    } else {
-      alert("请先输入需要格式化的句子！");
-    }
-  }
-
-  // 预览效果
-  function previewSentences() {
-    const raw = document.getElementById('sentences-input').value.trim();
-    const previewEl = document.getElementById('preview-area');
-    if (!raw) {
-      previewEl.style.display = 'block';
-      previewEl.innerHTML = '<span style="color:#ef4444;">请输入至少一道题目</span>';
-      return;
-    }
-
-    const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-    let html = '<strong>【实时生成预览效果】</strong><br><br>';
-
-    lines.forEach((line, idx) => {
-      let num = (idx + 1) + ".";
-      let rest = line;
-      const numMatch = line.match(/^(\d+[\.、\s])\s*/);
-      if (numMatch) {
-        num = numMatch[1].trim();
-        rest = line.substring(numMatch[0].length).trim();
-      }
-
-      const answers = rest.split('|').map(s => s.trim()).filter(Boolean);
-      html += `<div class="preview-item"><strong>${num}</strong> `;
-
-      answers.forEach((ans, aIdx) => {
-        const tokens = ans.split(/\s+/).filter(Boolean);
-        let endPunct = "。";
-        if (tokens.length > 0 && /^[。？！?!]$/.test(tokens[tokens.length - 1])) {
-          endPunct = tokens.pop();
-        }
-
-        if (aIdx > 0) html += ` <strong style="color:var(--primary); margin: 0 8px;">或者</strong> `;
-        
-        tokens.forEach(t => {
-          const isMidPunct = /^[，、；;]$/.test(t);
-          html += `<span class="chip-preview ${isMidPunct ? 'chip-punct' : ''}">${escapeHtml(t)}</span>`;
-        });
-        html += `<span class="chip-preview chip-end-punct">[固定句末: ${endPunct}]</span>`;
-      });
-
-      html += `</div>`;
-    });
-
-    previewEl.style.display = 'block';
-    previewEl.innerHTML = html;
-  }
-
-  // 单个文件下载
-  function downloadFile(filename, content) {
-    if (!content || !content.trim()) {
-      alert(`请先填写 ${filename} 的内容！`);
-      return;
-    }
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(link.href);
-  }
-
-  // 一键生成并打包全部文件
-  function generateAndDownloadAll() {
-    const sentences = document.getElementById('sentences-input').value.trim();
-    const names = document.getElementById('namelist-input').value.trim();
-    const scoreUrl = document.getElementById('score-url-input').value.trim();
-
-    if (!sentences) {
-      alert("请先填写题目内容 (sentences.txt)");
-      return;
-    }
-
-    downloadFile('sentences.txt', sentences);
-    if (names) {
-      setTimeout(() => downloadFile('namelist.txt', names), 300);
-    }
-    if (scoreUrl) {
-      setTimeout(() => downloadFile('score.txt', scoreUrl), 600);
-    }
-  }
-
-  function escapeHtml(str) {
-    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  }
-</script>
-
-</body>
-</html>
