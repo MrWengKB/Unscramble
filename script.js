@@ -206,29 +206,29 @@ async function submitExam() {
   }
 
   // 发送数据到 Google Sheet Webhook
+ // 发送数据到 Google Sheet Webhook
   if (googleSheetWebhookUrl) {
     const btn = document.getElementById('submit-btn');
     btn.disabled = true;
     btn.textContent = "正在提交成绩到教师表格...";
 
-    const payload = {
-      time: new Date().toLocaleString(),
-      student: studentName,
-      total: total,
-      correct: correctCount,
-      duration: durationSec,
-      accuracy: accuracy
-    };
+    // 组装表单键值对（穿透性最强、最稳定）
+    const formData = new URLSearchParams();
+    formData.append('time', new Date().toLocaleString());
+    formData.append('student', studentName);
+    formData.append('total', total);
+    formData.append('correct', correctCount);
+    formData.append('duration', durationSec);
+    formData.append('accuracy', accuracy);
 
     try {
-      // 关键：使用 text/plain;charset=utf-8 避免浏览器的 OPTIONS 跨域预检拦截
       await fetch(googleSheetWebhookUrl, {
         method: 'POST',
         mode: 'no-cors',
         headers: {
-          'Content-Type': 'text/plain;charset=utf-8'
+          'Content-Type': 'application/x-www-form-urlencoded'
         },
-        body: JSON.stringify(payload)
+        body: formData.toString()
       });
 
       showToast(`已提交！得分：${correctCount}/${total}，成绩已保存至教师表格。`, 4000);
@@ -241,8 +241,7 @@ async function submitExam() {
     }
   } else {
     showToast(`练习完成！答对：${correctCount}/${total}`, 4000);
-  }
-}
+  }}
 
 // 绑定初始化事件
 window.addEventListener('DOMContentLoaded', init);
