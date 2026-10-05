@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Sheets 自动收集成绩配置指南</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --code-bg: #1e293b;
+      --success: #059669;
+      --warning-bg: #fffbeb;
+      --warning-border: #fde68a;
+      --warning-text: #92400e;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 30px 16px 80px;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .header {
+      margin-bottom: 30px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .header h1 {
+      font-size: 1.6rem;
+      color: #1e293b;
+    }
+
+    .btn-back {
+      text-decoration: none;
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 0.95rem;
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: #fff;
+      transition: all 0.2s;
+    }
+    .btn-back:hover {
+      background: #eff6ff;
+      border-color: var(--primary);
+    }
+
+    .step-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .step-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .step-badge {
+      background: var(--primary);
+      color: #fff;
+      font-size: 0.85rem;
+      padding: 2px 10px;
+      border-radius: 999px;
+    }
+
+    ol, ul {
+      padding-left: 20px;
+      margin-bottom: 14px;
+    }
+    li {
+      margin-bottom: 8px;
+    }
+
+    .code-container {
+      position: relative;
+      margin: 16px 0;
+    }
+
+    pre {
+      background: var(--code-bg);
+      color: #f1f5f9;
+      padding: 16px;
+      border-radius: 8px;
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 0.9rem;
+      overflow-x: auto;
+      line-height: 1.5;
+    }
+
+    .btn-copy-code {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-copy-code:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .callout-warning {
+      background: var(--warning-bg);
+      border: 1px solid var(--warning-border);
+      color: var(--warning-text);
+      padding: 14px 18px;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      margin-top: 14px;
+    }
+    .callout-warning strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>Google Sheets 自动收集成绩配置教程</h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 4px;">只需配置一次，后续学生交卷成绩全自动写入您的私密表格</p>
+      </div>
+      <a href="admin.html" class="btn-back">← 返回生成器</a>
+    </div>
+
+    <!-- 步骤 1 -->
+    <div class="step-card">
+      <div class="step-title">
+        <span class="step-badge">步骤 1</span>
+        <span>新建 Google Sheet 并打开代码编辑器</span>
+      </div>
+      <ol>
+        <li>登录您的 Google 账号，进入 Google Drive 新建一个空白的 <strong>Google Sheets（电子表格）</strong>，命名为例如“连词成句成绩汇总”。</li>
+        <li>点击顶部菜单栏的 <strong>扩展程序 (Extensions)</strong> → <strong>Apps Script</strong>。</li>
+      </ol>
+    </div>
+
+    <!-- 步骤 2 -->
+    <div class="step-card">
+      <div class="step-title">
+        <span class="step-badge">步骤 2</span>
+        <span>粘贴接收脚本</span>
+      </div>
+      <p>清空编辑器中原有的默认代码，将以下代码完整复制并粘贴进去：</p>
+      
+      <div class="code-container">
+        <button class="btn-copy-code" onclick="copyScriptCode()">一键复制代码</button>
+        <pre><code id="script-code">function doGet(e) {
+  return handle(e);
+}
+
+function doPost(e) {
+  return handle(e);
+}
+
+function handle(e) {
+  var lock = LockService.getScriptLock();
+  lock.tryLock(10000);
+
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheets()[0];
+    
+    var p = {};
+    if (e && e.parameter && Object.keys(e.parameter).length > 0) {
+      p = e.parameter;
+    } else if (e && e.postData && e.postData.contents) {
+      try {
+        p = JSON.parse(e.postData.contents);
+      } catch (err) {
+        p = e.parameter || {};
+      }
+    }
+    
+    // 如果首行为空，自动初始化表头
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(["提交时间", "学生姓名", "总题数", "正确题数", "用时(秒)", "正确率"]);
+    }
+    
+    // 写入学生成绩
+    sheet.appendRow([
+      p.time || new Date().toLocaleString(),
+      p.student || "未填姓名",
+      p.total || 0,
+      p.correct || 0,
+      p.duration || 0,
+      p.accuracy || "0%"
+    ]);
+    
+    return ContentService.createTextOutput("SUCCESS");
+  } catch (err) {
+    return ContentService.createTextOutput("ERROR: " + err.toString());
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// 专门用于触发 Google 授权弹窗的函数
+function triggerAuth() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
+  sheet.appendRow(["授权成功", new Date().toLocaleString()]);
+}</code></pre>
+      </div>
+
+      <p>粘贴后，点击上方工具栏的 <strong>保存 (软盘图标)</strong>。</p>
+    </div>
+
+    <!-- 步骤 3 -->
+    <div class="step-card">
+      <div class="step-title">
+        <span class="step-badge">步骤 3</span>
+        <span>执行一次授权（关键必须操作）</span>
+      </div>
+      <ol>
+        <li>在 Apps Script 上方工具栏，找到“调试”按钮左侧的<strong>函数下拉框</strong>。</li>
+        <li>点击下拉框，选中 <strong><code>triggerAuth</code></strong>。</li>
+        <li>点击旁边的 <strong>运行 (Run)</strong> 按钮。</li>
+        <li>此时屏幕中央会弹出 <strong>“需要授权 (Authorization required)”</strong>：
+          <ul>
+            <li>点击 <strong>查看权限 (Review permissions)</strong> 并选择您的 Google 账号。</li>
+            <li>如果出现“Google 尚未验证此应用”，点击左下角小灰字 <strong>高级 (Advanced)</strong>。</li>
+            <li>点击最下方的 <strong>前往“未命名项目”（不安全） / Go to Untitled project (unsafe)</strong>。</li>
+            <li>点击 <strong>允许 (Allow)</strong>。</li>
+          </ul>
+        </li>
+      </ol>
+      <div class="callout-warning">
+        <strong>💡 提示：</strong>
+        授权成功后切回 Google Sheet 表格，若看到多出了一行“授权成功”，说明写入权限已彻底打通（您可以手动删掉这行测试记录）。
+      </div>
+    </div>
+
+    <!-- 步骤 4 -->
+    <div class="step-card">
+      <div class="step-title">
+        <span class="step-badge">步骤 4</span>
+        <span>发布为 Web 应用并获取链接</span>
+      </div>
+      <ol>
+        <li>点击右上角蓝色的 <strong>部署 (Deploy)</strong> → <strong>新建部署 (New deployment)</strong>。</li>
+        <li>在弹窗左侧点击齿轮图标，选择 <strong>Web 应用 (Web app)</strong>。</li>
+        <li>填写与确认配置项（<strong>极重要</strong>）：
+          <ul>
+            <li><strong>说明</strong>：成绩收集</li>
+            <li><strong>执行身份 (Execute as)</strong>：选择 <strong>我 (Me)</strong></li>
+            <li><strong>谁有权访问 (Who has access)</strong>：选择 <strong>任何人 (Anyone)</strong> <em>（注：这样学生在自己设备上交卷时才无需登录您的 Google 账号）</em></li>
+          </ul>
+        </li>
+        <li>点击 <strong>部署 (Deploy)</strong>。</li>
+        <li>复制生成的 <strong>Web 应用程序网址 (Web app URL)</strong>（网址必须以 <code>/exec</code> 结尾）。</li>
+      </ol>
+    </div>
+
+    <!-- 步骤 5 -->
+    <div class="step-card">
+      <div class="step-title">
+        <span class="step-badge">步骤 5</span>
+        <span>粘贴至教师端生成器</span>
+      </div>
+      <p>回到教师端后台（<code>admin.html</code>），把刚刚复制的链接粘贴到 <strong>第 3 项“你的 Google Sheets 成绩接收链接”</strong> 输入框中即可！</p>
+    </div>
+  </div>
+
+  <script>
+    function copyScriptCode() {
+      const code = document.getElementById('script-code').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        alert("Apps Script 代码已复制到剪贴板！可以直接到编辑器里粘贴。");
+      }).catch(err => {
+        const ta = document.createElement('textarea');
+        ta.value = code;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        alert("Apps Script 代码已复制到剪贴板！");
+      });
+    }
+  </script>
+</body>
+</html>
