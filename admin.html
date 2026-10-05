@@ -45,11 +45,30 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
     .form-group label {
-      display: block;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       font-weight: 700;
       font-size: 1rem;
       margin-bottom: 6px;
       color: #334155;
+    }
+    .guide-link {
+      font-size: 0.85rem;
+      color: var(--primary);
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #eff6ff;
+      padding: 4px 10px;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+    .guide-link:hover {
+      background: #dbeafe;
+      text-decoration: underline;
     }
     .hint {
       font-size: 0.85rem;
@@ -168,7 +187,10 @@
 
     <!-- 3. 教师专属 Google Sheet 链接 -->
     <div class="form-group">
-      <label>3. 你的 Google Sheets 成绩接收链接（可选）</label>
+      <label>
+        <span>3. 你的 Google Sheets 成绩接收链接（可选）</span>
+        <a href="guide.html" target="_blank" class="guide-link">📖 查看配置教程（带一键复制代码）↗</a>
+      </label>
       <div class="hint">
         粘贴你的 Apps Script Web App 链接（以 <code>/exec</code> 结尾）。留空则仅供学生练习，不云端留存成绩。
       </div>
@@ -203,17 +225,17 @@
         return;
       }
 
-      // 将老师的数据打包成一个对象
+      // 将老师的数据打包成对象
       const payload = {
         n: namelist,   // namelist
         s: sentences,  // sentences
         w: webhook     // webhook
       };
 
-      // 使用 LZString 进行高效无损压缩，并转为安全 URL 格式
+      // 使用 LZString 进行高效无损压缩，并转换为安全 URL 格式
       const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(payload));
       
-      // 构造学生端链接（指向同目录的 index.html）
+      // 构造学生端链接（指向同目录下的 index.html）
       const currentUrl = window.location.href;
       const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/') + 1) + 'index.html';
       const studentUrl = `${baseUrl}#data=${compressed}`;
@@ -234,7 +256,7 @@
         correctLevel : QRCode.CorrectLevel.M
       });
 
-      // 滚动到底部
+      // 平滑滚动到底部结果区
       document.getElementById('result-box').scrollIntoView({ behavior: 'smooth' });
     }
 
