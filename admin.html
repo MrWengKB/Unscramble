@@ -3,17 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>连词成句 - 练习制作后台 (Admin)</title>
+  <title>连词成句 - 练习生成后台</title>
   <style>
     :root {
-      --primary: #3b82f6;
-      --primary-hover: #2563eb;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
       --bg: #f8fafc;
       --card-bg: #ffffff;
-      --text: #1e293b;
+      --text: #0f172a;
       --text-muted: #64748b;
-      --border: #e2e8f0;
-      --success: #10b981;
+      --border: #cbd5e1;
+      --success: #16a34a;
+      --success-hover: #15803d;
+      --warning: #d97706;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -22,11 +24,11 @@
       background-color: var(--bg);
       color: var(--text);
       min-height: 100vh;
-      padding: 24px 16px;
+      padding: 24px 16px 60px;
     }
 
     .container {
-      max-width: 900px;
+      max-width: 920px;
       margin: 0 auto;
     }
 
@@ -36,17 +38,17 @@
       align-items: center;
       margin-bottom: 24px;
       padding-bottom: 16px;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 2px solid var(--border);
     }
 
-    header h1 { font-size: 1.4rem; color: #0f172a; }
+    header h1 { font-size: 1.4rem; font-weight: 700; color: #0f172a; }
     .back-link {
       display: inline-flex;
       align-items: center;
       gap: 6px;
       color: var(--primary);
       text-decoration: none;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
       font-weight: 600;
     }
     .back-link:hover { text-decoration: underline; }
@@ -56,21 +58,23 @@
       border-radius: 12px;
       border: 1px solid var(--border);
       padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
 
     .card-title {
-      font-size: 1.1rem;
+      font-size: 1.15rem;
       font-weight: 700;
       margin-bottom: 6px;
-      color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
 
     .card-desc {
-      font-size: 0.85rem;
+      font-size: 0.88rem;
       color: var(--text-muted);
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       line-height: 1.5;
     }
 
@@ -79,7 +83,7 @@
       padding: 2px 6px;
       border-radius: 4px;
       color: #0f172a;
-      font-family: monospace;
+      font-weight: 600;
     }
 
     textarea, input[type="text"] {
@@ -90,61 +94,63 @@
       font-size: 0.95rem;
       font-family: inherit;
       outline: none;
-      transition: border-color 0.2s;
+      transition: all 0.2s;
     }
 
     textarea:focus, input[type="text"]:focus {
       border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
 
     textarea {
       resize: vertical;
-      min-height: 160px;
+      min-height: 150px;
       line-height: 1.6;
     }
 
-    .btn-group {
+    .btn-toolbar {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       margin-top: 14px;
       flex-wrap: wrap;
     }
 
     button {
-      padding: 10px 18px;
-      font-size: 0.9rem;
+      padding: 9px 18px;
+      font-size: 0.92rem;
       font-weight: 600;
       border-radius: 8px;
       cursor: pointer;
       border: none;
-      transition: all 0.2s;
+      transition: all 0.15s ease;
       display: inline-flex;
       align-items: center;
       gap: 6px;
     }
 
+    button:active { transform: scale(0.98); }
+
     .btn-primary { background: var(--primary); color: white; }
     .btn-primary:hover { background: var(--primary-hover); }
 
-    .btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid var(--border); }
-    .btn-secondary:hover { background: #e2e8f0; color: #1e293b; }
+    .btn-secondary { background: #e2e8f0; color: #334155; }
+    .btn-secondary:hover { background: #cbd5e1; }
 
     .btn-success { background: var(--success); color: white; }
-    .btn-success:hover { background: #059669; }
+    .btn-success:hover { background: var(--success-hover); }
 
     .preview-box {
       margin-top: 16px;
       background: #f8fafc;
-      border: 1px dashed var(--border);
-      border-radius: 8px;
-      padding: 14px;
-      font-size: 0.9rem;
+      border: 2px dashed #cbd5e1;
+      border-radius: 10px;
+      padding: 16px;
+      font-size: 0.95rem;
     }
 
     .preview-item {
       margin-bottom: 12px;
-      padding-bottom: 8px;
+      padding-bottom: 10px;
       border-bottom: 1px solid #e2e8f0;
     }
     .preview-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
@@ -152,22 +158,46 @@
     .chip-preview {
       display: inline-block;
       background: white;
-      border: 1px solid #cbd5e1;
-      padding: 3px 8px;
-      border-radius: 4px;
-      margin: 2px 4px 2px 0;
-      font-size: 0.85rem;
+      border: 1px solid #94a3b8;
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin: 3px 4px 3px 0;
+      font-size: 0.9rem;
+      font-weight: 500;
     }
 
-    .chip-punct { background: #f1f5f9; font-weight: bold; }
-    .chip-end-punct { background: #e2e8f0; font-weight: bold; color: #475569; }
+    .chip-punct { background: #e0f2fe; border-color: #7dd3fc; color: #0369a1; font-weight: 700; }
+    .chip-end-punct { background: #e2e8f0; font-weight: 700; color: #475569; }
+
+    .global-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-top: 36px;
+      padding: 24px;
+      background: white;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .btn-large {
+      padding: 14px 36px;
+      font-size: 1.1rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.3);
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
   <header>
-    <h1>连词成句 - 练习制作后台</h1>
+    <div>
+      <h1>连词成句 - 练习生成管理后台</h1>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">制作、转换题目并生成配套配置文件</p>
+    </div>
     <a href="index.html" class="back-link">
       ← 返回练习页面
     </a>
@@ -175,52 +205,102 @@
 
   <!-- 1. 题目生成与编辑 -->
   <div class="card">
-    <div class="card-title">1. 编辑练习题目 (sentences.txt)</div>
+    <div class="card-title">
+      <span>1. 题目设置 (sentences.txt)</span>
+    </div>
     <div class="card-desc">
-      格式规则：<br>
-      • 词语与标点之间用 <strong>单个空格</strong> 隔开，每行一题，行首必须有序号（如 <code>1. </code>）。<br>
-      • 如果同一题有<strong>多种可能答案</strong>，用 <strong><code>|</code></strong> 隔开。<br>
-      • 句中标点（如 <code>，</code>、<code>、</code>）也会生成为可移动方块，句尾标点（如 <code>。</code>、<code>？</code>、<code>！</code>）自动锁定在最右侧。
+      • 支持常规用空格分词的格式，如：<code>1. 我 会 扫地 ， 也 会 抹 桌子 。 | 我 会 抹 桌子 ， 也 会 扫地 。</code><br>
+      • 如果直接粘贴了未空格的句子，可点击下方 <strong>“⚡ 智能分词与生成格式”</strong> 快速拆开字词。
     </div>
     
-    <textarea id="sentences-input" placeholder="例如：
+    <textarea id="sentences-input" placeholder="可直接在此粘贴题目，每行一题。例如：
 1. 我们 今天 在 公园里 散步 。
 2. 我 会 扫地 ， 也 会 抹 桌子 。 | 我 会 抹 桌子 ， 也 会 扫地 。"></textarea>
 
-    <div class="btn-group">
-      <button class="btn-primary" onclick="previewSentences()">👁 格式检查与预览</button>
-      <button class="btn-success" onclick="downloadFile('sentences.txt', document.getElementById('sentences-input').value)">⬇ 下载 sentences.txt</button>
+    <div class="btn-toolbar">
+      <button class="btn-primary" onclick="autoFormatSentences()">⚡ 智能拆词 / 格式化</button>
+      <button class="btn-secondary" onclick="previewSentences()">👁 预览排版效果</button>
+      <button class="btn-success" onclick="downloadFile('sentences.txt', document.getElementById('sentences-input').value)">⬇ 生成并下载 sentences.txt</button>
     </div>
 
-    <!-- 预览区 -->
+    <!-- 预览呈现区 -->
     <div class="preview-box" id="preview-area" style="display:none;"></div>
   </div>
 
-  <!-- 2. 学生名单管理 -->
+  <!-- 2. 学生名单配置 -->
   <div class="card">
-    <div class="card-title">2. 学生名单配置 (namelist.txt)</div>
-    <div class="card-desc">每行输入一个学生姓名，用于首页下拉列表选取：</div>
-    <textarea id="namelist-input" style="min-height: 100px;" placeholder="小明&#10;小红&#10;李华"></textarea>
-    <div class="btn-group">
-      <button class="btn-success" onclick="downloadFile('namelist.txt', document.getElementById('namelist-input').value)">⬇ 下载 namelist.txt</button>
+    <div class="card-title">2. 学生名单设置 (namelist.txt)</div>
+    <div class="card-desc">每行一个学生姓名，用于首页下拉列表选取：</div>
+    <textarea id="namelist-input" style="min-height: 100px;" placeholder="小明&#10;小红&#10;小华"></textarea>
+    <div class="btn-toolbar">
+      <button class="btn-success" onclick="downloadFile('namelist.txt', document.getElementById('namelist-input').value)">⬇ 生成并下载 namelist.txt</button>
     </div>
   </div>
 
   <!-- 3. Google Sheet 接口配置 -->
   <div class="card">
-    <div class="card-title">3. 教师成绩表 Webhook 链接 (score.txt)</div>
+    <div class="card-title">3. 教师成绩回传接口 (score.txt)</div>
     <div class="card-desc">
-      填入你在 Google Sheets 中通过 Apps Script 部署生成的 Web App 链接（以 <code>https://script.google.com/macros/s/.../exec</code> 开头）：
+      填入你在 Google Sheets 中部署 Apps Script 获得的 Web App 链接（以 <code>https://script.google.com/macros/s/.../exec</code> 开头）：
     </div>
     <input type="text" id="score-url-input" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
-    <div class="btn-group">
-      <button class="btn-success" onclick="downloadFile('score.txt', document.getElementById('score-url-input').value.trim())">⬇ 下载 score.txt</button>
+    <div class="btn-toolbar">
+      <button class="btn-success" onclick="downloadFile('score.txt', document.getElementById('score-url-input').value.trim())">⬇ 生成并下载 score.txt</button>
     </div>
+  </div>
+
+  <!-- 4. 全局一键生成与打包 -->
+  <div class="global-actions">
+    <button class="btn-success btn-large" onclick="generateAndDownloadAll()">
+      🚀 一键生成并下载全部文件
+    </button>
+    <span style="font-size: 0.85rem; color: var(--text-muted);">
+      点击后将依次下载生成的 <strong>sentences.txt</strong>、<strong>namelist.txt</strong> 和 <strong>score.txt</strong>，放入 GitHub 仓库根目录即可。
+    </span>
   </div>
 </div>
 
 <script>
-  // 预览与解析检查
+  // 智能拆词辅助函数：自动为未空格的标点、词语加入空格
+  function autoFormatSentences() {
+    const el = document.getElementById('sentences-input');
+    const lines = el.value.split('\n');
+    const formatted = [];
+
+    lines.forEach((line, idx) => {
+      let trimmed = line.trim();
+      if (!trimmed) return;
+
+      // 提取行首已有序号（如 1. ），若没有则自动加上
+      let num = `${idx + 1}. `;
+      const match = trimmed.match(/^(\d+[\.、\s])\s*/);
+      if (match) {
+        num = match[1].includes('.') ? match[1].trim() + ' ' : match[1].replace('、', '.').trim() + ' ';
+        trimmed = trimmed.substring(match[0].length).trim();
+      }
+
+      // 按多解竖线分割
+      const answers = trimmed.split('|').map(s => s.trim()).filter(Boolean);
+      const cleanAnswers = answers.map(ans => {
+        // 在常见标点前加入空格分离
+        let s = ans.replace(/([，、；;。？！?!])/g, ' $1 ');
+        // 压缩多余空格
+        s = s.replace(/\s+/g, ' ').trim();
+        return s;
+      });
+
+      formatted.push(num + cleanAnswers.join(' | '));
+    });
+
+    if (formatted.length > 0) {
+      el.value = formatted.join('\n');
+      previewSentences();
+    } else {
+      alert("请先输入需要格式化的句子！");
+    }
+  }
+
+  // 预览效果
   function previewSentences() {
     const raw = document.getElementById('sentences-input').value.trim();
     const previewEl = document.getElementById('preview-area');
@@ -231,10 +311,9 @@
     }
 
     const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-    let html = '<strong>【预览效果】</strong><br><br>';
+    let html = '<strong>【实时生成预览效果】</strong><br><br>';
 
     lines.forEach((line, idx) => {
-      // 匹配题号
       let num = (idx + 1) + ".";
       let rest = line;
       const numMatch = line.match(/^(\d+[\.、\s])\s*/);
@@ -253,13 +332,13 @@
           endPunct = tokens.pop();
         }
 
-        if (aIdx > 0) html += ` <strong style="color:var(--primary); margin: 0 6px;">或</strong> `;
+        if (aIdx > 0) html += ` <strong style="color:var(--primary); margin: 0 8px;">或者</strong> `;
         
         tokens.forEach(t => {
           const isMidPunct = /^[，、；;]$/.test(t);
-          html += `<span class="chip-preview ${isMidPunct ? 'chip-punct' : ''}">${t}</span>`;
+          html += `<span class="chip-preview ${isMidPunct ? 'chip-punct' : ''}">${escapeHtml(t)}</span>`;
         });
-        html += `<span class="chip-preview chip-end-punct">[固定: ${endPunct}]</span>`;
+        html += `<span class="chip-preview chip-end-punct">[固定句末: ${endPunct}]</span>`;
       });
 
       html += `</div>`;
@@ -269,9 +348,9 @@
     previewEl.innerHTML = html;
   }
 
-  // 触发本地文件下载
+  // 单个文件下载
   function downloadFile(filename, content) {
-    if (!content.trim()) {
+    if (!content || !content.trim()) {
       alert(`请先填写 ${filename} 的内容！`);
       return;
     }
@@ -279,8 +358,34 @@
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = filename;
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
     URL.revokeObjectURL(link.href);
+  }
+
+  // 一键生成并打包全部文件
+  function generateAndDownloadAll() {
+    const sentences = document.getElementById('sentences-input').value.trim();
+    const names = document.getElementById('namelist-input').value.trim();
+    const scoreUrl = document.getElementById('score-url-input').value.trim();
+
+    if (!sentences) {
+      alert("请先填写题目内容 (sentences.txt)");
+      return;
+    }
+
+    downloadFile('sentences.txt', sentences);
+    if (names) {
+      setTimeout(() => downloadFile('namelist.txt', names), 300);
+    }
+    if (scoreUrl) {
+      setTimeout(() => downloadFile('score.txt', scoreUrl), 600);
+    }
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 </script>
 
