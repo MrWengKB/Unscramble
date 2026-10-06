@@ -70,11 +70,32 @@
       background: #dbeafe;
       text-decoration: underline;
     }
+    .btn-format {
+      font-size: 0.82rem;
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .btn-format:hover {
+      background: #e2e8f0;
+      color: var(--primary);
+    }
     .hint {
       font-size: 0.85rem;
       color: var(--muted);
       margin-bottom: 12px;
       line-height: 1.5;
+    }
+    .hint code {
+      background: #f1f5f9;
+      padding: 2px 5px;
+      border-radius: 4px;
+      color: #0f172a;
     }
     textarea, input[type="text"] {
       width: 100%;
@@ -176,13 +197,16 @@
 
     <!-- 2. 练习题目 -->
     <div class="form-group">
-      <label>2. 句子题目（每行一题，空格分开词语，标点放在句末）</label>
+      <label>
+        <span>2. 练习题目（每行一题，空格分开词语与句中标点）</span>
+        <button type="button" class="btn-format" onclick="autoFormatSpacing()">⚡ 自动规范标点与空格</button>
+      </label>
       <div class="hint">
-        格式示例：<br>
-        <code>1. 我们 今天 在 公园里 散步 。</code><br>
-        <code>2. 天上 飘着 许多 白云 。</code>
+        • <strong>一题多解</strong>：多种正确答案用竖线 <code>|</code> 隔开。<br>
+        • <strong>标点规则</strong>：句中标点（<code>，</code>、<code>、</code>）前后请留空格作为移动块；句尾标点（<code>。</code>、<code>？</code>、<code>！</code>）自动锁定在最右侧。<br>
+        • <strong>重复字词</strong>：如“我 <strong>会</strong> 扫地 ， 也 <strong>会</strong> 抹 桌子 。”，学生拖动任意一个“会”均有效。
       </div>
-      <textarea id="input-sentences" placeholder="1. 我们 今天 在 公园里 散步 。&#10;2. 小鸟 在 枝头 快乐地 唱歌 。"></textarea>
+      <textarea id="input-sentences" placeholder="1. 我们 今天 在 公园里 散步 。&#10;2. 我 会 扫地 ， 也 会 抹 桌子 。 | 我 会 抹 桌子 ， 也 会 扫地 。"></textarea>
     </div>
 
     <!-- 3. 教师专属 Google Sheet 链接 -->
@@ -215,6 +239,43 @@
   </div>
 
   <script>
+    // 题目输入规范化辅助：确保句中标点、句末标点及竖线均带空格
+    function autoFormatSpacing() {
+      const textarea = document.getElementById('input-sentences');
+      const val = textarea.value.trim();
+      if (!val) {
+        alert("请先输入题目！");
+        return;
+      }
+
+      const lines = val.split('\n');
+      const formattedLines = lines.map((line, idx) => {
+        let trimmed = line.trim();
+        if (!trimmed) return "";
+
+        // 保留或补充行首题号
+        let prefix = `${idx + 1}. `;
+        const match = trimmed.match(/^(\d+[\.、\s])\s*/);
+        if (match) {
+          prefix = match[1].includes('.') ? match[1].trim() + ' ' : match[1].replace('、', '.').trim() + ' ';
+          trimmed = trimmed.substring(match[0].length).trim();
+        }
+
+        // 按多解竖线分割分别格式化
+        const solutions = trimmed.split('|').map(s => {
+          let str = s.trim();
+          // 将句中标点、句末标点两侧补充空格
+          str = str.replace(/([，、；;。？！?!])/g, ' $1 ');
+          // 压缩多余空格
+          return str.replace(/\s+/g, ' ').trim();
+        });
+
+        return prefix + solutions.join(' | ');
+      });
+
+      textarea.value = formattedLines.filter(Boolean).join('\n');
+    }
+
     function generateLink() {
       const namelist = document.getElementById('input-namelist').value.trim();
       const sentences = document.getElementById('input-sentences').value.trim();
@@ -225,10 +286,10 @@
         return;
       }
 
-      // 将老师的数据打包成对象
+      // 将老师的数据打包成对象（保留与原版本一致的精简键名）
       const payload = {
         n: namelist,   // namelist
-        s: sentences,  // sentences
+        s: sentences,  // sentences (包含 | 多解及句中标点)
         w: webhook     // webhook
       };
 
