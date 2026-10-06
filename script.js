@@ -3,7 +3,6 @@ let googleSheetWebhookUrl = "";
 let selectedChipForSwap = null;
 let startTime = Date.now();
 
-// 辅助提示函数
 function showToast(msg, duration = 3000) {
   const toast = document.getElementById('status-toast');
   if (!toast) return;
@@ -15,64 +14,87 @@ function showToast(msg, duration = 3000) {
 // 页面初始化
 async function init() {
   startTime = Date.now();
-  await loadWebhookUrl();
-  await loadStudentNames();
-  await loadSentences();
+
+  // 1. 优先从 URL Hash (#data=...) 或 URL Query (?data=...) 解析 LZString 压缩数据
+  let hashData = "";
+  const hash = window.location.hash;
+  if (hash && hash.includes('data=')) {
+    hashData = hash.substring(hash.indexOf('data=') + 5);
+  } else {
+    const params = new URLSearchParams(window.location.search);
+    hashData = params.get('data') || "";
+  }
+
+  if (hashData && typeof LZString !== 'undefined') {
+    try {
+      const decompressed = LZString.decompressFromEncodedURIComponent(hashData);
+      if (decompressed) {
+        const payload = JSON.parse(decompressed);
+        if (payload.n) {
+          const names = payload.n.split('\n').map(x => x.trim()).filter(Boolean);
+          renderStudentDropdown(names);
+        }
+        if (payload.w) {
+          googleSheetWebhookUrl = payload.w.trim();
+        }
+        if (payload.s) {
+          parseAndRenderSentences(payload.s);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("解析 URL 数据包失败:", e);
+    }
+  }
+
+  // 2. 回退模式：若链接中无题目，读取根目录文件
+  await tryLoadLocalFiles();
 }
 
-// 1. 读取 score.txt 获得 Webhook 链接
-async function loadWebhookUrl() {
+async function tryLoadLocalFiles() {
   try {
     const res = await fetch(`./score.txt?t=${Date.now()}`);
-    if (res.ok) {
-      const text = await res.text();
-      googleSheetWebhookUrl = text.trim();
-    }
-  } catch (e) {
-    console.warn("未能读取到 score.txt，将仅在前端做正误检验。");
-  }
-}
+    if (res.ok) googleSheetWebhookUrl = (await res.text()).trim();
+  } catch (e) {}
 
-// 2. 读取 namelist.txt 填充下拉菜单
-async function loadStudentNames() {
-  const select = document.getElementById('student-select');
-  if (!select) return;
   try {
     const res = await fetch(`./namelist.txt?t=${Date.now()}`);
     if (res.ok) {
       const text = await res.text();
-      const names = text.split('\n').map(n => n.trim()).filter(Boolean);
-      names.forEach(name => {
-        const opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
-        select.appendChild(opt);
-      });
+      const list = text.split('\n').map(n => n.trim()).filter(Boolean);
+      if (list.length > 0) renderStudentDropdown(list);
     }
-  } catch (e) {
-    console.error("加载名单失败:", e);
-  }
-}
+  } catch (e) {}
 
-// 3. 读取 sentences.txt 并解析多解与词块
-async function loadSentences() {
   try {
     const res = await fetch(`./sentences.txt?t=${Date.now()}`);
-    if (!res.ok) throw new Error("无法读取 sentences.txt");
-    const text = await res.text();
-    parseAndRenderSentences(text);
-  } catch (e) {
-    document.getElementById('questions-list').innerHTML = `
-      <div style="text-align:center; padding: 40px; color:#ef4444;">
-        未找到 sentences.txt 文件，请确保文件存在于根目录。
-      </div>`;
-  }
+    if (res.ok) {
+      const text = await res.text();
+      if (text.trim()) {
+        parseAndRenderSentences(text);
+        return;
+      }
+    }
+  } catch (e) {}
+
+  // 默认兜底示例（含一题多解）
+  parseAndRenderSentences(`1. 我们 今天 在 公园里 散步 。\n2. 我 会 扫地 ， 也 会 抹 桌子 。 | 我 会 抹 桌子 ， 也 会 扫地 。`);
+}
+
+function renderStudentDropdown(names) {
+  const select = document.getElementById('student-select');
+  if (!select) return;
+  select.innerHTML = '<option value="">-- 请选择姓名 --</option>';
+  names.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    select.appendChild(opt);
+  });
 }
 
 /**
- * 解析 sentences.txt 并动态渲染题目
- * 支持格式示例：
- * 1. 我 会 扫地 ， 也 会 抹 桌子 。 | 我 会 抹 桌子 ， 也 会 扫地 。
+ * 健壮的句子解析器：完美支持一题多解与句尾标点剥离
  */
 function parseAndRenderSentences(rawText) {
   const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
@@ -81,7 +103,7 @@ function parseAndRenderSentences(rawText) {
   listContainer.innerHTML = '';
 
   lines.forEach((line, idx) => {
-    // 1. 分离行首题号（如 "1. " 或 "1、"）
+    // 1. 分离行首题号
     let numStr = (idx + 1) + ".";
     let restOfLine = line;
     const numMatch = line.match(/^(\d+[\.、\s])\s*/);
@@ -90,43 +112,44 @@ function parseAndRenderSentences(rawText) {
       restOfLine = line.substring(numMatch[0].length).trim();
     }
 
-    // 2. 按竖线 '|' 切割出所有可能的多解句子
+    // 2. 切分多解（竖线 '|'）
     const rawAnswers = restOfLine.split('|').map(s => s.trim()).filter(Boolean);
     if (rawAnswers.length === 0) return;
 
-    // 存储当前题目的所有有效排列方案（词语及句中标点的字符串数组）
     const validSolutions = [];
-    let endPunctuation = "。"; // 默认句末终结标点
+    let endPunctuation = "。";
 
-    rawAnswers.forEach((ansStr, aIdx) => {
-      // 按空格切割所有词块与标点
-      let tokens = ansStr.split(/\s+/).filter(Boolean);
+    rawAnswers.forEach((ansStr) => {
+      // 容错：自动在句中逗号、顿号、句尾标点前后加上空格，防止老师输入时标点与汉字粘连
+      let cleanStr = ansStr.replace(/([，、；;。？！\?!])/g, ' $1 ').trim();
+      let tokens = cleanStr.split(/\s+/).map(t => t.trim()).filter(Boolean);
       if (tokens.length === 0) return;
 
-      // 提取句末终结标点（句号、问号、感叹号等），句中标点（逗号、顿号）不剥离
+      // 提取句末标点（句号、问号、感叹号及英文句点），句中逗号/顿号不剔除
       const lastToken = tokens[tokens.length - 1];
-      if (/^[。？！?!]$/.test(lastToken)) {
+      if (/^[。？！\?!.]$/.test(lastToken)) {
         endPunctuation = tokens.pop();
+        if (endPunctuation === '.') endPunctuation = '。'; // 英文句点转为中文句号
       }
 
-      // 将该答案记录为一种标准解
+      // 存储为一种合法的词语序列解法
       validSolutions.push(tokens);
     });
 
     if (validSolutions.length === 0) return;
 
-    // 以第一个答案方案为基准，提取要打乱的方块（包括词语、逗号、顿号等）
+    // 以第1种解法为基准生成打乱的方块（包括词语和句中逗号/顿号）
     const tokensToShuffle = [...validSolutions[0]];
     const shuffledTokens = shuffleArray(tokensToShuffle);
 
     questionsData.push({
       id: idx,
       number: numStr,
-      solutions: validSolutions, // 支持的所有合法排列方案
-      punctuation: endPunctuation // 句末固定标点
+      solutions: validSolutions, // 包含所有解法：例如解法A与解法B
+      punctuation: endPunctuation
     });
 
-    // 3. 构建题目卡片 DOM
+    // 3. 构建卡片
     const card = document.createElement('div');
     card.className = 'question-card';
     card.id = `q-card-${idx}`;
@@ -137,7 +160,7 @@ function parseAndRenderSentences(rawText) {
       </div>
       <div class="unscramble-lane">
         <div class="words-container" id="words-container-${idx}">
-          ${shuffledTokens.map((token, tIdx) => `
+          ${shuffledTokens.map(token => `
             <div class="word-chip ${/^[，、；;]$/.test(token) ? 'punct-chip' : ''}" data-word="${escapeHtml(token)}">
               ${escapeHtml(token)}
             </div>
@@ -148,15 +171,16 @@ function parseAndRenderSentences(rawText) {
     `;
     listContainer.appendChild(card);
 
-    // 4. 绑定拖曳排序 (SortableJS)
+    // 拖曳与点击互换绑定
     const wordsEl = card.querySelector(`#words-container-${idx}`);
-    new Sortable(wordsEl, {
-      animation: 150,
-      ghostClass: 'sortable-ghost',
-      chosenClass: 'sortable-chosen'
-    });
+    if (typeof Sortable !== 'undefined') {
+      new Sortable(wordsEl, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen'
+      });
+    }
 
-    // 5. 绑定点击两词互换（辅助低年级触屏设备操作）
     wordsEl.addEventListener('click', (e) => {
       const chip = e.target.closest('.word-chip');
       if (!chip) return;
@@ -165,26 +189,19 @@ function parseAndRenderSentences(rawText) {
   });
 }
 
-// 数组随机乱序（Fisher-Yates 算法）
 function shuffleArray(arr) {
-  const result = [...arr];
-  for (let i = result.length - 1; i > 0; i--) {
+  const res = [...arr];
+  for (let i = res.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [result[i], result[j]] = [result[j], result[i]];
+    [res[i], res[j]] = [res[j], res[i]];
   }
-  return result;
+  return res;
 }
 
-// 避免 XSS
 function escapeHtml(str) {
-  return str.replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-// 点击互换处理逻辑
 function handleChipTap(chip, container) {
   if (!selectedChipForSwap) {
     selectedChipForSwap = chip;
@@ -194,7 +211,6 @@ function handleChipTap(chip, container) {
     selectedChipForSwap = null;
   } else {
     if (selectedChipForSwap.parentElement === container) {
-      // 仅在同一个题目容器内互换
       const next1 = selectedChipForSwap.nextSibling;
       const next2 = chip.nextSibling;
       container.insertBefore(selectedChipForSwap, next2);
@@ -205,14 +221,14 @@ function handleChipTap(chip, container) {
   }
 }
 
-// 检查所有题目并提交成绩
+// 检查答案（支持多解匹配与相同汉字任意互换）
 async function submitExam() {
   const studentSelect = document.getElementById('student-select');
   const studentName = studentSelect ? studentSelect.value : "";
   
-  if (!studentName) {
+  if (!studentName && studentSelect && studentSelect.children.length > 1) {
     alert("请先在页面右上角选择你的名字！");
-    if (studentSelect) studentSelect.focus();
+    studentSelect.focus();
     return;
   }
 
@@ -223,12 +239,14 @@ async function submitExam() {
     const badge = document.getElementById(`badge-${q.id}`);
     const container = document.getElementById(`words-container-${q.id}`);
     
-    // 获取学生当前排好的词语与句中标点序列
-    const currentWords = Array.from(container.children).map(c => c.dataset.word);
-    const currentKey = currentWords.join('___');
+    // 提取当前学生拼出的词块文本序列
+    const currentWords = Array.from(container.children).map(c => (c.dataset.word || c.textContent).trim());
 
-    // 对比所有可接受的可能解法（多解支持 & 同字等价支持）
-    const isCorrect = q.solutions.some(sol => sol.join('___') === currentKey);
+    // 只要符合任何一种合法方案即可（多解的核心判定）
+    const isCorrect = q.solutions.some(solution => {
+      if (solution.length !== currentWords.length) return false;
+      return solution.every((word, idx) => word.trim() === currentWords[idx]);
+    });
 
     if (isCorrect) {
       correctCount++;
@@ -244,12 +262,10 @@ async function submitExam() {
   const accuracy = total > 0 ? `${Math.round((correctCount / total) * 100)}%` : '0%';
   const durationSec = Math.round((Date.now() - startTime) / 1000);
 
-  // 全对时触发纸屑特效
   if (correctCount === total && total > 0 && typeof confetti === 'function') {
     confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
   }
 
-  // 如果配有 Google Sheet Webhook，推送到云端表格
   if (googleSheetWebhookUrl) {
     const btn = document.getElementById('submit-btn');
     if (btn) {
@@ -259,7 +275,7 @@ async function submitExam() {
 
     const payload = {
       time: new Date().toLocaleString(),
-      student: studentName,
+      student: studentName || "匿名作答",
       total: total,
       correct: correctCount,
       duration: durationSec,
@@ -273,13 +289,13 @@ async function submitExam() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      showToast(`已提交！得分：${correctCount}/${total}，成绩已保存至教师表格。`, 4000);
+      showToast(`已提交！得分：${correctCount}/${total}，成绩已录入。`, 4000);
       if (btn) btn.textContent = "成绩已提交完成";
     } catch (err) {
-      showToast(`检查完成！得分：${correctCount}/${total}（网络提交失败，请联系老师）`, 4000);
+      showToast(`检查完成！得分：${correctCount}/${total}（网络提交异常）`, 4000);
       if (btn) {
         btn.disabled = false;
-        btn.textContent = "重新提交成绩";
+        btn.textContent = "重新提交";
       }
     }
   } else {
@@ -287,5 +303,4 @@ async function submitExam() {
   }
 }
 
-// 页面加载完成后启动
 window.addEventListener('DOMContentLoaded', init);
