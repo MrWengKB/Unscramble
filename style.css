@@ -1,11 +1,11 @@
 :root {
-  --primary: #3b82f6;
-  --primary-hover: #2563eb;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
   --bg: #f8fafc;
   --card-bg: #ffffff;
-  --text: #1e293b;
+  --text: #0f172a;
   --text-muted: #64748b;
-  --border: #e2e8f0;
+  --border: #cbd5e1;
   --correct: #10b981;
   --correct-bg: #ecfdf5;
   --incorrect: #ef4444;
@@ -31,7 +31,7 @@ body {
 header {
   background: var(--card-bg);
   border-bottom: 1px solid var(--border);
-  padding: 16px 24px;
+  padding: 14px 20px;
   position: sticky;
   top: 0;
   z-index: 50;
@@ -39,12 +39,12 @@ header {
 }
 
 .header-content {
-  max-width: 900px;
+  max-width: 960px;
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
@@ -55,7 +55,7 @@ header {
 }
 
 .title-group p {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--text-muted);
   margin-top: 2px;
 }
@@ -63,7 +63,8 @@ header {
 .user-panel {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .student-select-wrap {
@@ -79,35 +80,57 @@ header {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-muted);
-  margin-right: 8px;
+  margin-right: 6px;
   white-space: nowrap;
 }
 
 select#student-select {
   background: transparent;
   border: none;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 600;
   color: var(--text);
   outline: none;
   cursor: pointer;
+  max-width: 140px;
+}
+
+.btn-admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-admin:hover {
+  background: #f1f5f9;
+  color: var(--primary);
 }
 
 main {
   flex: 1;
-  max-width: 900px;
+  max-width: 960px;
   width: 100%;
-  margin: 24px auto;
+  margin: 20px auto;
   padding: 0 16px;
 }
 
 .question-card {
   background: var(--card-bg);
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid var(--border);
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  padding: 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   transition: all 0.2s ease;
 }
 
@@ -115,18 +138,18 @@ main {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .question-num {
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: #475569;
 }
 
 .status-badge {
   font-size: 0.8rem;
-  padding: 3px 8px;
+  padding: 2px 8px;
   border-radius: 6px;
   display: none;
   font-weight: 600;
@@ -158,11 +181,11 @@ main {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   padding: 12px;
   background: #f8fafc;
   border-radius: 10px;
-  min-height: 60px;
+  min-height: 56px;
   border: 2px dashed #cbd5e1;
 }
 
@@ -170,27 +193,36 @@ main {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  min-height: 42px;
+  min-height: 40px;
   align-items: center;
 }
 
 .word-chip {
   background: #ffffff;
-  border: 1px solid #cbd5e1;
-  padding: 8px 16px;
+  border: 1px solid #94a3b8;
+  padding: 8px 14px;
   font-size: 1.05rem;
   font-weight: 600;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   cursor: grab;
   user-select: none;
   touch-action: manipulation;
-  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+  transition: background 0.15s, transform 0.15s;
 }
 
 .word-chip:active {
   cursor: grabbing;
-  transform: scale(0.98);
+  transform: scale(0.96);
+}
+
+/* 句中标点（逗号、顿号等）可移动方块专用样式 */
+.word-chip.punct-chip {
+  padding: 8px 12px;
+  background-color: #e0f2fe;
+  border-color: #7dd3fc;
+  color: #0369a1;
+  font-weight: 700;
 }
 
 .word-chip.selected-swap {
@@ -213,7 +245,7 @@ main {
 .actions-footer {
   display: flex;
   justify-content: center;
-  margin: 32px 0 48px;
+  margin: 28px 0 48px;
 }
 
 .btn-submit {
@@ -225,7 +257,7 @@ main {
   font-weight: 600;
   border-radius: 10px;
   cursor: pointer;
-  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
   transition: background 0.2s, transform 0.1s;
 }
 
@@ -257,12 +289,4 @@ main {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   display: none;
   z-index: 1000;
-}
-
-/* 句中标点方块样式 */
-.word-chip.punct-chip {
-  padding: 8px 12px;
-  background-color: #f1f5f9;
-  color: #334155;
-  font-weight: 700;
 }
